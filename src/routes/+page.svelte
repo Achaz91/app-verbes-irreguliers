@@ -19,23 +19,25 @@
     let quizEnded = false;
     let quizVerbPool = [];
     let reviewDeck = [];
-
-    // NOUVEAU : Variables pour le son
     let isMuted = false;
     let audioCtx;
 
     // --- CYCLE DE VIE ---
     onMount(() => {
+        // Charger les données sauvegardées
         const savedReviewDeck = localStorage.getItem('reviewDeck');
         if (savedReviewDeck) {
             reviewDeck = JSON.parse(savedReviewDeck);
         }
-        // On charge la préférence de son
         const savedMutePref = localStorage.getItem('isMuted');
         isMuted = savedMutePref ? JSON.parse(savedMutePref) : false;
+
+        // NOUVEAU : Enregistrer le Service Worker pour le mode hors ligne
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js');
+        }
     });
 
-    // On sauvegarde la préférence de son quand elle change
     $: if (typeof window !== 'undefined') {
         localStorage.setItem('isMuted', JSON.stringify(isMuted));
     }
@@ -46,23 +48,19 @@
 
     // --- FONCTIONS ---
 
-    // NOUVEAU : Initialise le contexte audio (doit être fait après une interaction utilisateur)
     function initializeAudio() {
         if (typeof window !== 'undefined' && !audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
     }
 
-    // NOUVEAU : Joue un son
     function playSound(type) {
         if (isMuted || !audioCtx) return;
-
         const oscillator = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
         oscillator.connect(gainNode);
         gainNode.connect(audioCtx.destination);
-        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); // Volume discret
-
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
         if (type === 'correct') {
             oscillator.type = 'sine';
             oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
@@ -70,13 +68,12 @@
             oscillator.type = 'square';
             oscillator.frequency.setValueAtTime(120, audioCtx.currentTime);
         }
-
         oscillator.start(audioCtx.currentTime);
         oscillator.stop(audioCtx.currentTime + 0.15);
     }
 
     function setMode(newMode) {
-        initializeAudio(); // On initialise le son à la première interaction
+        initializeAudio();
         mode = newMode;
         if (newMode === 'quiz') {
             startQuiz();
@@ -86,7 +83,7 @@
     }
     
     function toggleSound() {
-        initializeAudio(); // Au cas où l'utilisateur clique ici en premier
+        initializeAudio();
         isMuted = !isMuted;
     }
 
@@ -136,14 +133,14 @@
             isCorrect = true;
             score++;
             streak++;
-            playSound('correct'); // On joue le son de succès
+            playSound('correct');
             if (reviewDeck.includes(currentVerb.infinitive)) {
                 reviewDeck = reviewDeck.filter(verbInfinitive => verbInfinitive !== currentVerb.infinitive);
             }
         } else {
             isCorrect = false;
             streak = 0;
-            playSound('incorrect'); // On joue le son d'erreur
+            playSound('incorrect');
             if (!reviewDeck.includes(currentVerb.infinitive)) {
                 reviewDeck = [...reviewDeck, currentVerb.infinitive];
             }
@@ -208,9 +205,8 @@
         text-align: center;
         border: 2px solid transparent;
         transition: border-color 0.3s;
-        position: relative; /* NOUVEAU : Pour le bouton de son */
+        position: relative;
     }
-    /* NOUVEAU : Style pour le bouton de son */
     .btn-sound {
         position: absolute;
         top: 0.75rem;
@@ -531,7 +527,6 @@
         class:correct-answer={showFeedback && isCorrect}
         class:incorrect-answer={showFeedback && !isCorrect}
     >
-        <!-- NOUVEAU : Bouton pour couper le son -->
         <button class="btn-sound" on:click={toggleSound} aria-label="Activer ou désactiver le son">
             {#if isMuted}🔇{:else}🔊{/if}
         </button>
