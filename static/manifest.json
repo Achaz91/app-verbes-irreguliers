@@ -1,0 +1,17 @@
+{
+  "name": "Verbes Irréguliers Quiz",
+  "short_name": "Verbes Quiz",
+  "author": "sio",
+  "description": "Une application pour s'entraîner et mémoriser les verbes irréguliers en anglais.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f0f4f8",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
