@@ -1,6 +1,7 @@
 <script>
     // --- IMPORTATIONS ---
     import { onMount } from 'svelte';
+    import { browser } from '$app/environment'; // NOUVEAU : L'outil SvelteKit pour détecter si on est dans le navigateur
     import verbsData from '$lib/verbs.json';
 
     const QUIZ_LENGTH = 10;
@@ -24,32 +25,34 @@
 
     // --- CYCLE DE VIE ---
     onMount(() => {
-        // Charger les données sauvegardées
-        const savedReviewDeck = localStorage.getItem('reviewDeck');
-        if (savedReviewDeck) {
-            reviewDeck = JSON.parse(savedReviewDeck);
-        }
-        const savedMutePref = localStorage.getItem('isMuted');
-        isMuted = savedMutePref ? JSON.parse(savedMutePref) : false;
+        // onMount s'exécute uniquement dans le navigateur, mais on ajoute une
+        // vérification "if (browser)" par bonne pratique et pour être très clair.
+        if (browser) {
+            const savedReviewDeck = localStorage.getItem('reviewDeck');
+            if (savedReviewDeck) {
+                reviewDeck = JSON.parse(savedReviewDeck);
+            }
+            const savedMutePref = localStorage.getItem('isMuted');
+            isMuted = savedMutePref ? JSON.parse(savedMutePref) : false;
 
-        // NOUVEAU : Enregistrer le Service Worker pour le mode hors ligne
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js');
+            // Enregistrer le Service Worker pour le mode hors ligne
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js');
+            }
         }
     });
 
-    $: if (typeof window !== 'undefined') {
-        localStorage.setItem('isMuted', JSON.stringify(isMuted));
-    }
-    
-    $: if (typeof window !== 'undefined') {
+    // NOUVEAU : On utilise "if (browser)" pour s'assurer que le localStorage
+    // n'est appelé que côté client, ce qui corrige l'erreur de construction.
+    $: if (browser) {
         localStorage.setItem('reviewDeck', JSON.stringify(reviewDeck));
+        localStorage.setItem('isMuted', JSON.stringify(isMuted));
     }
 
     // --- FONCTIONS ---
 
     function initializeAudio() {
-        if (typeof window !== 'undefined' && !audioCtx) {
+        if (browser && !audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
     }
